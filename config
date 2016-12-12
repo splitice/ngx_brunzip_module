@@ -1,0 +1,20 @@
+
+ngx_addon_name=ngx_http_brunzip_filter_module
+
+HTTP_FILTER_MODULES="$HTTP_FILTER_MODULES ngx_http_brunzip_filter_module"
+
+NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_http_brunzip_filter_module.c"
+
+CORE_INCS="$CORE_INCS $ngx_addon_dir/brotli/include/"
+
+CORE_DEPS="$CORE_DEPS brotli"
+
+CORE_LIBS="$CORE_LIBS -lm"
+
+CORE_LINK="$CORE_LINK $ngx_addon_dir/brotli/bin/obj/dec/bit_reader.o       \
+                      $ngx_addon_dir/brotli/bin/obj/dec/decode.o           \
+                      $ngx_addon_dir/brotli/bin/obj/dec/huffman.o          \
+                      $ngx_addon_dir/brotli/bin/obj/dec/state.o            \
+                      $ngx_addon_dir/brotli/bin/obj/common/dictionary.o"
+
+have=NGX_HTTP_GZIP . auto/have
