@@ -21,7 +21,7 @@ typedef enum BrotliFlushStates {
 	FLUSH_FLUSH = 1,
 	FLUSH_PROCESS = 2,
 	FLUSH_FINISH = 3
-}
+};
 
 typedef struct {
     ngx_chain_t         *in;
