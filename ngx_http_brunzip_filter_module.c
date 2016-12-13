@@ -16,12 +16,12 @@ typedef struct {
     ngx_bufs_t           bufs;
 } ngx_http_brunzip_conf_t;
 
-typedef enum BrotliFlushStates {
+typedef enum {
 	FLUSH_NO_FLUSH = 0,
 	FLUSH_FLUSH = 1,
 	FLUSH_PROCESS = 2,
 	FLUSH_FINISH = 3
-};
+} BrotliFlushStates;
 
 typedef struct {
     ngx_chain_t         *in;
@@ -398,7 +398,7 @@ ngx_http_brunzip_filter_add_data(ngx_http_request_t *r,
     } else if (ctx->in_buf->flush) {
         ctx->flush = FLUSH_FLUSH;
     } else if (ctx->available_in == 0) {
-        ctx->flush == FLUSH_NO_FLUSH;
+        ctx->flush = FLUSH_NO_FLUSH;
         return NGX_AGAIN;
     }
 
@@ -594,20 +594,13 @@ static ngx_int_t
 ngx_http_brunzip_filter_inflate_end(ngx_http_request_t *r,
     ngx_http_brunzip_ctx_t *ctx)
 {
-    int           rc;
     ngx_buf_t    *b;
     ngx_chain_t  *cl;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "brunzip inflate end");
 
-    rc = BrotliDecoderDestroyInstance(&ctx->bro);
-
-    if (rc != BROTLI_TRUE) {
-        ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
-                      "BrotliDecoderDestroyInstance() failed: %d", rc);
-        return NGX_ERROR;
-    }
+    BrotliDecoderDestroyInstance(&ctx->bro);
 
     b = ctx->out_buf;
 
