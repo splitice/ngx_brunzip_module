@@ -28,7 +28,7 @@ typedef struct {
     ngx_buf_t           *out_buf;
     ngx_int_t            bufs;
 
-    BrotliDecoderState   bro;
+    BrotliDecoderState   *bro;
 	
     uint8_t             *input;
     uint8_t             *output;
@@ -176,7 +176,7 @@ ngx_http_brunzip_header_filter(ngx_http_request_t *r)
 
     if (!conf->enable
         || r->headers_out.content_encoding == NULL
-        || accept_br(r->headers_out.content_encoding) == NGX_OK
+        || accept_br(r->headers_out.content_encoding) == NGX_OK)
     {
         return ngx_http_next_header_filter(r);
     }
@@ -457,9 +457,9 @@ ngx_http_brunzip_filter_inflate(ngx_http_request_t *r,
                    ctx->available_in, ctx->available_out,
                    ctx->flush, ctx->redo);
 
-    rc = BrotliDecoderDecompressStream(&ctx->bro, &ctx->available_in, &ctx->next_in, &ctx->available_out, &ctx->next_out, &ctx->total_out);
+    rc = BrotliDecoderDecompressStream(ctx->bro, &ctx->available_in, &ctx->next_in, &ctx->available_out, &ctx->next_out, &ctx->total_out);
 
-    if (rc != BROTLI_TRUE) {
+    if (rc == BROTLI_DECODER_RESULT_ERROR) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "BrotliDecoderDecompressStream() failed: %d, %d", ctx->flush, rc);
         return NGX_ERROR;
@@ -554,15 +554,6 @@ ngx_http_brunzip_filter_inflate(ngx_http_request_t *r,
     }
 
     if (rc == BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT && ctx->available_in > 0) {
-
-        //rc = inflateReset(&ctx->zstream);
-
-        if (rc != BROTLI_TRUE) {
-            ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
-                          "inflateReset() failed: %d", rc);
-            return NGX_ERROR;
-        }
-
         ctx->redo = 1;
 
         return NGX_AGAIN;
