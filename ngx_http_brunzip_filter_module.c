@@ -16,6 +16,12 @@ typedef struct {
     ngx_bufs_t           bufs;
 } ngx_http_brunzip_conf_t;
 
+typedef enum BrotliFlushStates {
+	FLUSH_NO_FLUSH = 0,
+	FLUSH_FLUSH = 1,
+	FLUSH_PROCESS = 2,
+	FLUSH_FINISH = 3
+}
 
 typedef struct {
     ngx_chain_t         *in;
@@ -39,7 +45,7 @@ typedef struct {
 	size_t               total_out;
 	
     unsigned             started:1;
-    BrotliDecoderOperation  flush:2;
+    BrotliFlushStates    flush:2;
     unsigned             redo:1;
     unsigned             done:1;
     unsigned             nomem:1;
@@ -365,7 +371,7 @@ static ngx_int_t
 ngx_http_brunzip_filter_add_data(ngx_http_request_t *r,
     ngx_http_brunzip_ctx_t *ctx)
 {
-    if (ctx->available_in || ctx->flush != BROTLI_OPERATION_PROCESS || ctx->redo) {
+    if (ctx->available_in || ctx->flush != FLUSH_PROCESS || ctx->redo) {
         return NGX_OK;
     }
 
@@ -388,13 +394,11 @@ ngx_http_brunzip_filter_add_data(ngx_http_request_t *r,
                    ctx->next_in, ctx->available_in);
 
     if (ctx->in_buf->last_buf || ctx->in_buf->last_in_chain) {
-        ctx->flush = BROTLI_OPERATION_FINISH;
-
+        ctx->flush = FLUSH_FINISH;
     } else if (ctx->in_buf->flush) {
-        ctx->flush = BROTLI_OPERATION_FLUSH;
-
+        ctx->flush = FLUSH_FLUSH;
     } else if (ctx->available_in == 0) {
-        /* ctx->flush == Z_NO_FLUSH */
+        ctx->flush == FLUSH_NO_FLUSH;
         return NGX_AGAIN;
     }
 
@@ -457,7 +461,7 @@ ngx_http_brunzip_filter_inflate(ngx_http_request_t *r,
                    ctx->available_in, ctx->available_out,
                    ctx->flush, ctx->redo);
 
-    rc = BrotliDecoderDecompressStream(ctx->bro, &ctx->available_in, &ctx->next_in, &ctx->available_out, &ctx->next_out, &ctx->total_out);
+    rc = BrotliDecoderDecompressStream(ctx->bro, &ctx->available_in, (const uint8_t**)&ctx->next_in, &ctx->available_out, &ctx->next_out, &ctx->total_out);
 
     if (rc == BROTLI_DECODER_RESULT_ERROR) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -506,9 +510,9 @@ ngx_http_brunzip_filter_inflate(ngx_http_request_t *r,
 
     ctx->redo = 0;
 
-    if (ctx->flush == BROTLI_OPERATION_FLUSH) {
+    if (ctx->flush == FLUSH_FLUSH) {
 
-        ctx->flush = BROTLI_OPERATION_PROCESS;
+        ctx->flush = FLUSH_PROCESS;
 
         cl = ngx_alloc_chain_link(r->pool);
         if (cl == NULL) {
@@ -538,7 +542,7 @@ ngx_http_brunzip_filter_inflate(ngx_http_request_t *r,
         return NGX_OK;
     }
 
-    if (ctx->flush == BROTLI_OPERATION_FINISH && ctx->available_in == 0) {
+    if (ctx->flush == FLUSH_FINISH && ctx->available_in == 0) {
 
         /*if (rc != Z_STREAM_END) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
