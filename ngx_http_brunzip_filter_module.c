@@ -9,7 +9,7 @@
 #include <ngx_http.h>
 
 #include <brotli/decode.h>
-
+#include <brotli/encode.h>
 
 typedef struct {
     ngx_flag_t           enable;
@@ -28,7 +28,7 @@ typedef struct {
     ngx_buf_t           *out_buf;
     ngx_int_t            bufs;
 
-    BrotliDecoderState  *bro;
+    BrotliDecoderState   bro;
 	
     uint8_t             *input;
     uint8_t             *output;
@@ -36,6 +36,7 @@ typedef struct {
     uint8_t             *next_out;
     size_t               available_in;
     size_t               available_out;
+	size_t               total_out;
 	
     unsigned             started:1;
     BrotliDecoderOperation  flush:2;
@@ -456,7 +457,7 @@ ngx_http_brunzip_filter_inflate(ngx_http_request_t *r,
                    ctx->available_in, ctx->available_out,
                    ctx->flush, ctx->redo);
 
-    rc = BrotliDecoderDecompressStream(&ctx->bro, &ctx->avail_in, &ctx->next_in, &ctx->avail_out, &ctx->next_out, &ctx->total_out);
+    rc = BrotliDecoderDecompressStream(&ctx->bro, &ctx->available_in, &ctx->next_in, &ctx->available_out, &ctx->next_out, &ctx->total_out);
 
     if (rc != BROTLI_TRUE) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
