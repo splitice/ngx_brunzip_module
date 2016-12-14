@@ -346,22 +346,20 @@ static ngx_int_t
 ngx_http_brunzip_filter_inflate_start(ngx_http_request_t *r,
     ngx_http_brunzip_ctx_t *ctx)
 {
-    int  rc;
-
     ctx->bro = BrotliDecoderCreateInstance(NULL, NULL, NULL);
     if (ctx->bro == NULL) {
         return NGX_ERROR;
-    }
-
-    if (rc != BROTLI_TRUE) {
-        ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
-                      "inflateInit2() failed: %d", rc);
-        return NGX_ERROR;
-    }
-
+    
     ctx->started = 1;
 
     ctx->last_out = &ctx->out;
+    ctx->input = NULL;
+    ctx->output = NULL;
+    ctx->next_in = NULL;
+    ctx->next_out = NULL;
+    ctx->available_in = 0;
+    ctx->available_out = 0;
+    ctx->total_out = 0;
 
     return NGX_OK;
 }
