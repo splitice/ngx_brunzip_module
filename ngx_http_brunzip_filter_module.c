@@ -9,7 +9,6 @@
 #include <ngx_http.h>
 
 #include <brotli/decode.h>
-#include <brotli/encode.h>
 
 typedef struct {
     ngx_flag_t           enable;
@@ -349,6 +348,7 @@ ngx_http_brunzip_filter_inflate_start(ngx_http_request_t *r,
     ctx->bro = BrotliDecoderCreateInstance(NULL, NULL, NULL);
     if (ctx->bro == NULL) {
         return NGX_ERROR;
+	}
     
     ctx->started = 1;
 
