@@ -14,7 +14,7 @@ CORE_LIBS="$CORE_LIBS -lm"
 CORE_LINK="$CORE_LINK $ngx_addon_dir/brotli/bin/obj/dec/bit_reader.o       \
                       $ngx_addon_dir/brotli/bin/obj/dec/decode.o           \
                       $ngx_addon_dir/brotli/bin/obj/dec/huffman.o          \
-                      $ngx_addon_dir/brotli/bin/obj/dec/state.o            \
-                      $ngx_addon_dir/brotli/bin/obj/common/dictionary.o"
+                      $ngx_addon_dir/brotli/bin/obj/dec/state.o            
+#                      $ngx_addon_dir/brotli/bin/obj/common/dictionary.o"
 
 have=NGX_HTTP_GZIP . auto/have
