@@ -1,6 +1,5 @@
 /*
- * Copyright (C) X4B
- * Copyright (C) Mathew Heard
+ * Copyright (C) Mathew Heard (https://www.x4b.net)
  */
 
 
@@ -16,10 +15,9 @@ typedef struct {
 } ngx_http_brunzip_conf_t;
 
 typedef enum {
-	FLUSH_NO_FLUSH = 0,
+	FLUSH_NOFLUSH = 0,
 	FLUSH_FLUSH = 1,
-	FLUSH_PROCESS = 2,
-	FLUSH_FINISH = 3
+	FLUSH_FINISH = 2
 } BrotliFlushStates;
 
 typedef struct {
@@ -177,14 +175,14 @@ ngx_http_brunzip_header_filter(ngx_http_request_t *r)
 
     if (!conf->enable
         || r->headers_out.content_encoding == NULL
-        || accept_br(r->headers_out.content_encoding) == NGX_OK)
+        || accept_br(r->headers_out.content_encoding) != NGX_OK)
     {
         return ngx_http_next_header_filter(r);
     }
 
     //r->gzip_vary = 1;
 
-	if (accept_br(r->headers_in.accept_encoding) != NGX_OK) {
+	if (accept_br(r->headers_in.accept_encoding) == NGX_OK) {
 		return ngx_http_next_header_filter(r);
 	}
 
@@ -365,7 +363,7 @@ static ngx_int_t
 ngx_http_brunzip_filter_add_data(ngx_http_request_t *r,
     ngx_http_brunzip_ctx_t *ctx)
 {
-    if (ctx->available_in || ctx->flush != FLUSH_PROCESS || ctx->redo) {
+    if (ctx->available_in || ctx->flush != FLUSH_NOFLUSH || ctx->redo) {
         return NGX_OK;
     }
 
@@ -392,7 +390,7 @@ ngx_http_brunzip_filter_add_data(ngx_http_request_t *r,
     } else if (ctx->in_buf->flush) {
         ctx->flush = FLUSH_FLUSH;
     } else if (ctx->available_in == 0) {
-        ctx->flush = FLUSH_NO_FLUSH;
+        ctx->flush = FLUSH_NOFLUSH;
         return NGX_AGAIN;
     }
 
@@ -474,7 +472,7 @@ ngx_http_brunzip_filter_inflate(ngx_http_request_t *r,
                    ctx->in_buf, ctx->in_buf->pos);
 
     if (ctx->next_in) {
-        ctx->in_buf->pos = ctx->next_in;
+			ctx->in_buf->pos = ctx->next_in;
 
         if (ctx->available_in == 0) {
             ctx->next_in = NULL;
@@ -506,7 +504,7 @@ ngx_http_brunzip_filter_inflate(ngx_http_request_t *r,
 
     if (ctx->flush == FLUSH_FLUSH) {
 
-        ctx->flush = FLUSH_PROCESS;
+        ctx->flush = FLUSH_NOFLUSH;
 
         cl = ngx_alloc_chain_link(r->pool);
         if (cl == NULL) {
