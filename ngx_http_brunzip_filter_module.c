@@ -598,7 +598,7 @@ ngx_http_brunzip_filter_inflate_end(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "brunzip inflate end");
 
-    BrotliDecoderDestroyInstance(&ctx->bro);
+    BrotliDecoderDestroyInstance(ctx->bro);
 
     b = ctx->out_buf;
 
