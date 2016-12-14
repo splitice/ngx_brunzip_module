@@ -66,7 +66,6 @@ static ngx_int_t ngx_http_brunzip_filter_inflate_end(ngx_http_request_t *r,
 
 static void *ngx_http_brunzip_filter_alloc(void *opaque, u_int items,
     u_int size);
-static void ngx_http_brunzip_filter_free(void *opaque, void *address);
 
 static ngx_int_t ngx_http_brunzip_filter_init(ngx_conf_t *cf);
 static void *ngx_http_brunzip_create_conf(ngx_conf_t *cf);
@@ -641,18 +640,6 @@ ngx_http_brunzip_filter_alloc(void *opaque, u_int items, u_int size)
 
     return ngx_palloc(ctx->request->pool, items * size);
 }
-
-
-static void
-ngx_http_brunzip_filter_free(void *opaque, void *address)
-{
-#if 0
-    ngx_http_brunzip_ctx_t *ctx = opaque;
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ctx->request->connection->log, 0,
-                   "brunzip free: %p", address);
-#endif
-}
-
 
 static void *
 ngx_http_brunzip_create_conf(ngx_conf_t *cf)
