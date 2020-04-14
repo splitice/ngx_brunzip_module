@@ -404,7 +404,8 @@ ngx_http_brunzip_filter_get_buf(ngx_http_request_t *r,
 {
     ngx_http_brunzip_conf_t  *conf;
 
-    if (ctx->available_out) {
+    // Don't attempt to fill buffer if only 64bytes remaining (too expensive)
+    if (ctx->available_out >= 64) {
         return NGX_OK;
     }
 
