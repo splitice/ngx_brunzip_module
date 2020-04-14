@@ -482,7 +482,7 @@ ngx_http_brunzip_filter_inflate(ngx_http_request_t *r,
 
     ctx->out_buf->last = ctx->next_out;
 
-    if (ctx->available_out == 0) {
+    if (rc == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT) {
 
         /* zlib wants to output some more data */
 
