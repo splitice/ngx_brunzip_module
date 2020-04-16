@@ -268,21 +268,23 @@ ngx_http_brunzip_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     // If there is no available output buffers ngx_http_brunzip_filter_get_buf will set ctx->nomem
     if (ctx->nomem) {
-
-        /* flush busy buffers */
-
+        // Pass onto next filters
         if (ngx_http_next_body_filter(r, NULL) == NGX_ERROR) {
             goto failed;
         }
 
         cl = NULL;
 
+        // Look for consumed buffers (from busy chain) and return to free
         ngx_chain_update_chains(r->pool, &ctx->free, &ctx->busy, &cl,
                                 (ngx_buf_tag_t) &ngx_http_brunzip_filter_module);
+
+        // We have done the flush (but couldn't ngx_chain_update_chains have found nothing ??? )
         ctx->nomem = 0;
         flush = 0;
 
     } else {
+        // If we have busy buffers - they need to be flushed before we can continue.
         flush = ctx->busy ? 1 : 0;
     }
 
@@ -341,10 +343,11 @@ ngx_http_brunzip_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
 
         // Recover (ex-busy) buffers consumed by later filters and return them to free
+        // Consumed buffers from out becomes busy as it's been sent to next chain (how ???)
         ngx_chain_update_chains(r->pool, &ctx->free, &ctx->busy, &ctx->out,
                                 (ngx_buf_tag_t) &ngx_http_brunzip_filter_module);
 
-        // ???
+        // last output buffer out may have changed (become NULL) if we sent all buffers on (???).
         ctx->last_out = &ctx->out;
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -400,8 +403,8 @@ ngx_http_brunzip_filter_add_data(ngx_http_request_t *r,
 {
     // Don't add more data if:
     // 1.   If there is currently available data in our context
-    // 2.1. FLUSH_FLUSH: We will feed this buffer through the decompressor first
-    // 2.2. FLUSH_FINISH: The last buffer was marked as the last buffer
+    // 2.1. FLUSH_FLUSH: We will feed this buffer through the decompressor first before proceeding
+    // 2.2. FLUSH_FINISH: The last buffer was marked as the final buffer for this request
     // 3.   We need to loop in order to output more data (redo)
     if (ctx->available_in || ctx->flush != FLUSH_NOFLUSH || ctx->redo) {
         return NGX_OK;
