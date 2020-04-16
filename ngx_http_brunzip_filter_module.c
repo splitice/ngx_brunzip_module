@@ -42,10 +42,10 @@ typedef struct {
     // This is the newest chunk of data to be processed and the latest data
     ngx_chain_t        **last_out;
 
-    // Current input buffer
+    // Current input buffer (not in ctx->in, has been taken)
     ngx_buf_t           *in_buf;
 
-    // Current output buffer
+    // Current output buffer (not in ctx->out yet)
     ngx_buf_t           *out_buf;
 
     // Number of buffers we currently have in use
@@ -54,7 +54,7 @@ typedef struct {
     // Brotli decoder instance
     BrotliDecoderState   *bro;
 	
-    // Current brotli decompressor integration state
+    // Current brotli decompressor integration state (refers to in_buf & out_buf)
     uint8_t             *input;
     uint8_t             *output;
     uint8_t             *next_in;
@@ -576,11 +576,13 @@ ngx_http_brunzip_filter_inflate(ngx_http_request_t *r,
         // with new input
         ctx->flush = FLUSH_NOFLUSH;
 
+        // Create chain link for the buffer we are going to flush
         cl = ngx_alloc_chain_link(r->pool);
         if (cl == NULL) {
             return NGX_ERROR;
         }
 
+        // The buffer we are going to flush
         b = ctx->out_buf;
 
         if (ngx_buf_size(b) == 0) {
@@ -625,29 +627,33 @@ ngx_http_brunzip_filter_inflate(ngx_http_request_t *r,
         return NGX_OK;
     }
 
-    // rc == BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT: Brotli has it's own buffer, so it will always consume all input bytes (NGX_AGAIN)
+    // rc == BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT: Brotli has it's own buffer, so it will always consume all input bytes (therefore NGX_AGAIN)
     // gunzip had to support more complex behaviour ???
 
-    // ???
+    // No more input data
     if (ctx->in == NULL) {
-
+        // Append the current output buffer
         b = ctx->out_buf;
 
+        // If there is no data in the output buffer, do nothing
         if (ngx_buf_size(b) == 0) {
             return NGX_OK;
         }
 
+        // Create chain link for appending to output
         cl = ngx_alloc_chain_link(r->pool);
         if (cl == NULL) {
             return NGX_ERROR;
         }
 
-        ctx->available_out = 0;
-
+        // Fill out chain link
         cl->buf = b;
         cl->next = NULL;
         *ctx->last_out = cl;
         ctx->last_out = &cl->next;
+
+        // output buffer all used
+        ctx->available_out = 0;
 
         return NGX_OK;
     }
@@ -667,9 +673,10 @@ ngx_http_brunzip_filter_inflate_end(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "brunzip inflate end");
 
+    // Destroy brotli decoder
     BrotliDecoderDestroyInstance(ctx->bro);
 
-    // ???
+    // If last buffer is 0 bytes then allocate a new buffer
     b = ctx->out_buf;
     if (ngx_buf_size(b) == 0) {
         b = ngx_calloc_buf(ctx->request->pool);
@@ -678,20 +685,23 @@ ngx_http_brunzip_filter_inflate_end(ngx_http_request_t *r,
         }
     }
 
-    // ???
+    // Create a chain link for the final buffer
     cl = ngx_alloc_chain_link(r->pool);
     if (cl == NULL) {
         return NGX_ERROR;
     }
 
-    // ???
+    // Put out_buffer (possibly 0 length) onto the output chain
+    // this will be the final buffer
     cl->buf = b;
     cl->next = NULL;
     *ctx->last_out = cl;
     ctx->last_out = &cl->next;
 
-    // ???
+    // ??? something to do with trailers or subrequests?
     b->last_buf = (r == r->main) ? 1 : 0;
+
+    // This is the last buffer
     b->last_in_chain = 1;
     b->sync = 1;
 
