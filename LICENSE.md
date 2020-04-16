@@ -1,4 +1,11 @@
 /*
+ * Copyright (C) Mathew Heard (https://www.x4b.net)
+ * 
+ * Includes work from nginx gunzip module:
+ * Copyright (C) Igor Sysoev
+ * Copyright (C) Maxim Dounin
+ * Copyright (C) Nginx, Inc.
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
