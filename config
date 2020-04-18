@@ -15,7 +15,7 @@ CORE_LINK="$CORE_LINK $ngx_addon_dir/brotli/bin/obj/c/dec/bit_reader.o       \
                       $ngx_addon_dir/brotli/bin/obj/c/dec/decode.o           \
                       $ngx_addon_dir/brotli/bin/obj/c/common/dictionary.o"
 
-if [ "$HTTP_BROTLI_FILTER" != YES ]; then
+if [ "$NGX_HTTP_BROTLI_FILTER" != YES ]; then
 CORE_LINK="$CORE_LINK $ngx_addon_dir/brotli/bin/obj/c/common/transform.o     \
                       $ngx_addon_dir/brotli/bin/obj/c/dec/huffman.o          \
                       $ngx_addon_dir/brotli/bin/obj/c/dec/state.o"
