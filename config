@@ -12,13 +12,13 @@ CORE_DEPS="$CORE_DEPS"
 CORE_LIBS="$CORE_LIBS -lm"
 
 CORE_LINK="$CORE_LINK $ngx_addon_dir/brotli/bin/obj/c/dec/bit_reader.o       \
-                      $ngx_addon_dir/brotli/bin/obj/c/dec/decode.o"
+                      $ngx_addon_dir/brotli/bin/obj/c/dec/decode.o           \
+                      $ngx_addon_dir/brotli/bin/obj/c/dec/huffman.o          \
+                      $ngx_addon_dir/brotli/bin/obj/c/dec/state.o"
 
 #if [ "$HTTP_FILTER_MODULES" != YES ]; then
 #CORE_LINK="$CORE_LINK $ngx_addon_dir/brotli/bin/obj/c/common/dictionary.o    \
 #                      $ngx_addon_dir/brotli/bin/obj/c/common/transform.o     \
-#                      $ngx_addon_dir/brotli/bin/obj/c/dec/huffman.o          \
-#                      $ngx_addon_dir/brotli/bin/obj/c/dec/state.o"
 #fi
 
 have=NGX_HTTP_GZIP . auto/have
